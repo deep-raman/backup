@@ -20,29 +20,27 @@ LOG_FILE="/tmp/${DATE}_${HOSTNAME}_BKP.log"
 
 DIRS_TO_BACKUP="/etc /root/scripts /opt/scripts"
 
-echo "            BACKUP SCRIPT                       " >> "$LOG_FILE"
-echo "------------------------------------------------" >> "$LOG_FILE"
-echo  "" >> "$LOG_FILE"
-echo "$TIMESTAMP - Starting backup $HOSTNAME" >> "$LOG_FILE"
-echo "Checking if $BACKUP_PATH exists" >> "$LOG_FILE"
+check_backup_path() {
+	if [[ -d "$BACKUP_PATH" ]]; then
+		echo "OK : $BACKUP_PATH exists." >> "$LOG_FILE"
+	else
+		echo "KO : $BACKUP_PATH doesn't exists. Creating it..." >> "$LOG_FILE"
+		mkdir "$BACKUP_PATH" >> "$LOG_FILE" 2>&1
+	fi
+}
 
-if [[ -d "$BACKUP_PATH" ]]; then
-	echo "OK : $BACKUP_PATH exists." >> "$LOG_FILE"
-else
-	echo "KO : $BACKUP_PATH doesn't exists. Creating it..." >> "$LOG_FILE"
-	mkdir "$BACKUP_PATH" >> "$LOG_FILE" 2>&1
-fi
-
-for DIR in $DIRS_TO_BACKUP; do
-	#echo "$DIR" >> $LOG_FILE
-	DIR_NAME=$(echo "$DIR" | sed 's/^\///g' | sed 's/\//_/g')
-	#echo "$DIR_NAME"
-	echo "Compressing : $DIR to : $BACKUP_PATH$DIR_NAME.tar.gz" >> "$LOG_FILE"
-	DIR_TAR=$(/bin/tar -zcvf "$BACKUP_PATH$DIR_NAME".tar.gz "$DIR" >> "$LOG_FILE" 2>&1)
-	echo "" >> "$LOG_FILE"
-	echo "Dir compressed successfully." >> "$LOG_FILE"
-	echo "" >> "$LOG_FILE"
-done
+compress_dirs_to_backup() {
+	for DIR in $DIRS_TO_BACKUP; do
+		#echo "$DIR" >> $LOG_FILE
+		DIR_NAME=$(echo "$DIR" | sed 's/^\///g' | sed 's/\//_/g')
+		#echo "$DIR_NAME"
+		echo "Compressing : $DIR to : $BACKUP_PATH$DIR_NAME.tar.gz" >> "$LOG_FILE"
+		DIR_TAR=$(/bin/tar -zcvf "$BACKUP_PATH$DIR_NAME".tar.gz "$DIR" >> "$LOG_FILE" 2>&1)
+		echo "" >> "$LOG_FILE"
+		echo "Dir compressed successfully." >> "$LOG_FILE"
+		echo "" >> "$LOG_FILE"
+	done
+}
 
 mysql_backup() {
 	echo "MYSQL BACKUP" >> "$LOG_FILE"
@@ -64,6 +62,16 @@ mysql_backup() {
 		echo "No databases found for backup" >> "$LOG_FILE"
 	fi
 }
+
+echo "            BACKUP SCRIPT                       " >> "$LOG_FILE"
+echo "------------------------------------------------" >> "$LOG_FILE"
+echo  "" >> "$LOG_FILE"
+echo "$TIMESTAMP - Starting backup $HOSTNAME" >> "$LOG_FILE"
+echo "Checking if $BACKUP_PATH exists" >> "$LOG_FILE"
+
+check_backup_path
+
+compress_dirs_to_backup
 
 mysql_backup
 
