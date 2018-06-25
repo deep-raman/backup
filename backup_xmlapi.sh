@@ -18,7 +18,16 @@ BACKUP_PATH="/var/backup/"
 OUT_FILE="/var/${HOSTNAME}_bkp_${DATE}.zip"
 LOG_FILE="/tmp/${DATE}_${HOSTNAME}_BKP.log"
 
+# Directories to backup
 DIRS_TO_BACKUP="/etc /root/scripts /opt/scripts"
+
+# DO NOT CHANGE ANYTHING BELOW
+
+#------------------------------------------#
+#-----------        ~~~~        -----------#
+#-----------  HERE BE DRAGONS   -----------#
+#-----------        ~~~~        -----------#
+#------------------------------------------#
 
 check_backup_path() {
 	if [[ -d "$BACKUP_PATH" ]]; then
@@ -27,6 +36,11 @@ check_backup_path() {
 		echo "KO : $BACKUP_PATH doesn't exists. Creating it..." >> "$LOG_FILE"
 		mkdir "$BACKUP_PATH" >> "$LOG_FILE" 2>&1
 	fi
+}
+
+get_packages_version() {
+	PACKAGES_FILE="${BACKUP_PATH}installed_packages.txt"
+	dpkg-query --show -f '${source:Package} ${source:Version}\n' | sort -u > "$PACKAGES_FILE"
 }
 
 compress_dirs_to_backup() {
@@ -69,10 +83,16 @@ echo  "" >> "$LOG_FILE"
 echo "$TIMESTAMP - Starting backup $HOSTNAME" >> "$LOG_FILE"
 echo "Checking if $BACKUP_PATH exists" >> "$LOG_FILE"
 
+# Check if backups destination directory exists, if not the script will create it.
 check_backup_path
 
+# Get installed packages version
+get_packages_version
+
+# Compress directories given in DIRS_TO_BACKUP 
 compress_dirs_to_backup
 
+# Create mysql databases backup
 mysql_backup
 
 echo "Compressing $BACKUP_PATH to create unique compressed file." >> "$LOG_FILE"
@@ -88,6 +108,5 @@ echo "================================================" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"
 
 /usr/bin/zip "${OUT_FILE}" "${LOG_FILE}"
-
 
 exit 0
