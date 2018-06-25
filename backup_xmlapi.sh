@@ -19,7 +19,7 @@ OUT_FILE="/var/${HOSTNAME}_bkp_${DATE}.zip"
 LOG_FILE="/tmp/${DATE}_${HOSTNAME}_BKP.log"
 
 # Directories to backup
-DIRS_TO_BACKUP="/etc /root/scripts /opt/scripts"
+DIRS_TO_BACKUP="/etc /root/scripts /opt/scripts /var/log /var/www/vhosts"
 
 # DO NOT CHANGE ANYTHING BELOW
 
@@ -41,6 +41,16 @@ check_backup_path() {
 get_packages_version() {
 	PACKAGES_FILE="${BACKUP_PATH}installed_packages.txt"
 	dpkg-query --show -f '${source:Package} ${source:Version}\n' | sort -u > "$PACKAGES_FILE"
+}
+
+get_apache_modules() {
+	APACHE_MODULES_FILE="${BACKUP_PATH}apache_modules.txt"
+	apache2ctl -M > "$APACHE_MODULES_FILE"
+}
+
+get_php_modules(){
+	PHP_MODULES_FILE="${BACKUP_PATH}php_modules.txt"
+	php -m > "$PHP_MODULES_FILE"
 }
 
 compress_dirs_to_backup() {
@@ -88,6 +98,12 @@ check_backup_path
 
 # Get installed packages version
 get_packages_version
+
+# Get enabled apache modules
+get_apache_modules
+
+# Get enabled php modules
+get_php_modules
 
 # Compress directories given in DIRS_TO_BACKUP 
 compress_dirs_to_backup
